@@ -1,4 +1,4 @@
-Clawdbot is a self-hosted AI assistant that connects to messaging platforms
+Moltbot is a self-hosted AI assistant that connects to messaging platforms
 (Telegram, WhatsApp, Discord, Slack, Signal) and provides an always-on
 AI assistant powered by Claude, GPT, or other LLM providers.
 
@@ -10,5 +10,5 @@ Features:
 - Voice message support
 - Extensible skill system
 
-Clawdbot runs as a gateway daemon that bridges messaging platforms to AI
+Moltbot runs as a gateway daemon that bridges messaging platforms to AI
 providers via their APIs.

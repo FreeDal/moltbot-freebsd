@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# PROVIDE: moltbot
+# REQUIRE: LOGIN DAEMON NETWORKING
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable moltbot:
+#
+# moltbot_enable="YES"
+# moltbot_user="moltbot"
+# moltbot_config="/usr/local/etc/moltbot"
+# moltbot_workspace="/var/db/moltbot"
+#
+# Note: Moltbot needs a config at ~/.moltbot/moltbot.json
+# Run: moltbot onboard --mode local --workspace /var/db/moltbot/workspace
+# as the moltbot user first.
+
+. /etc/rc.subr
+
+name="moltbot"
+rcvar="${name}_enable"
+
+load_rc_config $name
+
+: ${moltbot_enable:="NO"}
+: ${moltbot_user:="moltbot"}
+: ${moltbot_home:="/var/db/moltbot"}
+: ${moltbot_logfile:="/var/log/moltbot.log"}
+: ${moltbot_port:="18789"}
+
+pidfile="/var/run/${name}.pid"
+command="/usr/sbin/daemon"
+moltbot_cmd="/usr/local/bin/moltbot"
+
+# Use 'gateway run' for foreground mode with daemon wrapper
+command_args="-f -p ${pidfile} -u ${moltbot_user} -o ${moltbot_logfile} \
+    /usr/bin/env HOME=${moltbot_home} \
+    ${moltbot_cmd} gateway run --port ${moltbot_port}"
+
+start_precmd="${name}_prestart"
+stop_postcmd="${name}_poststop"
+
+moltbot_prestart()
+{
+    # Create home directory if it doesn't exist
+    if [ ! -d "${moltbot_home}" ]; then
+        mkdir -p "${moltbot_home}"
+        chown "${moltbot_user}:${moltbot_user}" "${moltbot_home}"
+    fi
+    
+    # Create log file if it doesn't exist
+    if [ ! -f "${moltbot_logfile}" ]; then
+        touch "${moltbot_logfile}"
+        chown "${moltbot_user}:${moltbot_user}" "${moltbot_logfile}"
+    fi
+    
+    # Check if config exists
+    if [ ! -f "${moltbot_home}/.moltbot/moltbot.json" ]; then
+        echo "Warning: Moltbot config not found at ${moltbot_home}/.moltbot/moltbot.json"
+        echo "Run as ${moltbot_user}: moltbot onboard --mode local"
+        return 1
+    fi
+}
+
+moltbot_poststop()
+{
+    rm -f "${pidfile}"
+}
+
+run_rc_command "$1"
