@@ -1,0 +1,14 @@
+Clawdbot is a self-hosted AI assistant that connects to messaging platforms
+(Telegram, WhatsApp, Discord, Slack, Signal) and provides an always-on
+AI assistant powered by Claude, GPT, or other LLM providers.
+
+Features:
+- Multi-platform messaging support
+- File and browser access capabilities
+- Cron jobs and scheduled tasks
+- Memory and context persistence
+- Voice message support
+- Extensible skill system
+
+Clawdbot runs as a gateway daemon that bridges messaging platforms to AI
+providers via their APIs.

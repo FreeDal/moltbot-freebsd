@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# PROVIDE: clawdbot
+# REQUIRE: LOGIN DAEMON NETWORKING
+# KEYWORD: shutdown
+#
+# Add the following lines to /etc/rc.conf to enable clawdbot:
+#
+# clawdbot_enable="YES"
+# clawdbot_user="clawdbot"
+# clawdbot_config="/usr/local/etc/clawdbot"
+# clawdbot_workspace="/var/db/clawdbot"
+#
+# Note: Clawdbot needs a config at ~/.clawdbot/clawdbot.json
+# Run: clawdbot onboard --mode local --workspace /var/db/clawdbot/workspace
+# as the clawdbot user first.
+
+. /etc/rc.subr
+
+name="clawdbot"
+rcvar="${name}_enable"
+
+load_rc_config $name
+
+: ${clawdbot_enable:="NO"}
+: ${clawdbot_user:="clawdbot"}
+: ${clawdbot_home:="/var/db/clawdbot"}
+: ${clawdbot_logfile:="/var/log/clawdbot.log"}
+: ${clawdbot_port:="18789"}
+
+pidfile="/var/run/${name}.pid"
+command="/usr/sbin/daemon"
+clawdbot_cmd="/usr/local/bin/clawdbot"
+
+# Use 'gateway run' for foreground mode with daemon wrapper
+command_args="-f -p ${pidfile} -u ${clawdbot_user} -o ${clawdbot_logfile} \
+    /usr/bin/env HOME=${clawdbot_home} \
+    ${clawdbot_cmd} gateway run --port ${clawdbot_port}"
+
+start_precmd="${name}_prestart"
+stop_postcmd="${name}_poststop"
+
+clawdbot_prestart()
+{
+    # Create home directory if it doesn't exist
+    if [ ! -d "${clawdbot_home}" ]; then
+        mkdir -p "${clawdbot_home}"
+        chown "${clawdbot_user}:${clawdbot_user}" "${clawdbot_home}"
+    fi
+    
+    # Create log file if it doesn't exist
+    if [ ! -f "${clawdbot_logfile}" ]; then
+        touch "${clawdbot_logfile}"
+        chown "${clawdbot_user}:${clawdbot_user}" "${clawdbot_logfile}"
+    fi
+    
+    # Check if config exists
+    if [ ! -f "${clawdbot_home}/.clawdbot/clawdbot.json" ]; then
+        echo "Warning: Clawdbot config not found at ${clawdbot_home}/.clawdbot/clawdbot.json"
+        echo "Run as ${clawdbot_user}: clawdbot onboard --mode local"
+        return 1
+    fi
+}
+
+clawdbot_poststop()
+{
+    rm -f "${pidfile}"
+}
+
+run_rc_command "$1"
