@@ -64,35 +64,44 @@ printf "${YELLOW}[2/7]${NC} Installing Node.js build tools...\n"
 npm install -g --force node-gyp node-addon-api >/dev/null 2>&1 || true
 printf "${GREEN}✓${NC} Build tools installed\n"
 
+# Note: npm package is still 'clawdbot', will be renamed to 'moltbot' eventually
+NPM_PKG="clawdbot"
+PKG_DIR="/usr/local/lib/node_modules/${NPM_PKG}"
+
 # Step 3: Install Moltbot via npm (may have warnings about native modules, that's OK)
 printf "${YELLOW}[3/7]${NC} Installing Moltbot via npm (this takes a minute)...\n"
-npm install -g --force moltbot 2>&1 | grep -v "^npm " || true
+npm install -g --force ${NPM_PKG} 2>&1 | grep -v "^npm " || true
 
-# Check if moltbot was installed (even with errors)
-if [ ! -d "/usr/local/lib/node_modules/moltbot" ]; then
+# Check if installed (even with errors)
+if [ ! -d "${PKG_DIR}" ]; then
     printf "${RED}Error: Moltbot installation failed${NC}\n"
     exit 1
 fi
 printf "${GREEN}✓${NC} Moltbot package installed\n"
 
-# Step 4: Install build dependencies in moltbot directory
+# Step 4: Install build dependencies in package directory
 printf "${YELLOW}[4/7]${NC} Installing native module dependencies...\n"
-cd /usr/local/lib/node_modules/moltbot
+cd "${PKG_DIR}"
 npm install node-addon-api node-gyp --save-dev >/dev/null 2>&1
 printf "${GREEN}✓${NC} Dependencies installed\n"
 
 # Step 5: Build clipboard module for FreeBSD
 printf "${YELLOW}[5/7]${NC} Building clipboard native module (this takes ~2 minutes)...\n"
-cd /usr/local/lib/node_modules/moltbot/node_modules/@mariozechner/clipboard
+cd "${PKG_DIR}/node_modules/@mariozechner/clipboard"
 npm install @napi-rs/cli >/dev/null 2>&1
 npx napi build --platform --release 2>&1 | grep -E "(Compiling|Finished|error)" || true
 printf "${GREEN}✓${NC} clipboard.freebsd-x64.node built\n"
 
 # Step 6: Rebuild sharp for FreeBSD
 printf "${YELLOW}[6/7]${NC} Rebuilding sharp image processing module...\n"
-cd /usr/local/lib/node_modules/moltbot
+cd "${PKG_DIR}"
 npm rebuild sharp >/dev/null 2>&1
 printf "${GREEN}✓${NC} sharp rebuilt\n"
+
+# Create moltbot symlink to clawdbot binary
+if [ -f "/usr/local/bin/clawdbot" ] && [ ! -f "/usr/local/bin/moltbot" ]; then
+    ln -s /usr/local/bin/clawdbot /usr/local/bin/moltbot
+fi
 
 # Step 7: Create user and directories
 printf "${YELLOW}[7/7]${NC} Setting up user and directories...\n"
@@ -149,8 +158,8 @@ moltbot_prestart()
         touch "${moltbot_logfile}"
         chown "${moltbot_user}:${moltbot_user}" "${moltbot_logfile}"
     fi
-    if [ ! -f "${moltbot_home}/.moltbot/moltbot.json" ]; then
-        echo "Warning: Run 'su -m ${moltbot_user} -c \"moltbot onboard --mode local\"' first"
+    if [ ! -f "${moltbot_home}/.clawdbot/clawdbot.json" ]; then
+        echo "Warning: Run 'su -l ${moltbot_user} -c \"moltbot onboard --mode local\"' first"
         return 1
     fi
 }
