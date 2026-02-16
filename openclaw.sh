@@ -72,22 +72,23 @@ printf "${GREEN}✓${NC} Build tools installed\n"
 NPM_PKG="openclaw"
 PKG_DIR="/usr/local/lib/node_modules/${NPM_PKG}"
 
-# Step 3: Install OpenClaw via npm (may have warnings about native modules, that's OK)
+# Step 3: Install OpenClaw via npm
+# Use --ignore-scripts to avoid node-llama-cpp postinstall failure on FreeBSD
 printf "${YELLOW}[3/7]${NC} Installing OpenClaw via npm (this takes a minute)...\n"
-npm install -g --force ${NPM_PKG} 2>&1 | grep -v "^npm " || true
+npm install -g --ignore-scripts ${NPM_PKG} 2>&1 | grep -v "^npm " || true
 
-# Check if installed (even with errors)
+# Check if installed
 if [ ! -d "${PKG_DIR}" ]; then
     printf "${RED}Error: OpenClaw installation failed${NC}\n"
     exit 1
 fi
 printf "${GREEN}✓${NC} OpenClaw package installed\n"
 
-# Step 4: Install build dependencies in package directory
-printf "${YELLOW}[4/7]${NC} Installing native module dependencies...\n"
+# Step 4: Install build dependencies and rebuild sharp
+printf "${YELLOW}[4/7]${NC} Building sharp image processing module...\n"
 cd "${PKG_DIR}"
-npm install node-addon-api node-gyp --save-dev >/dev/null 2>&1
-printf "${GREEN}✓${NC} Dependencies installed\n"
+npm rebuild sharp >/dev/null 2>&1
+printf "${GREEN}✓${NC} sharp rebuilt\n"
 
 # Step 5: Build clipboard module for FreeBSD
 printf "${YELLOW}[5/7]${NC} Building clipboard native module (this takes ~2 minutes)...\n"
@@ -96,11 +97,14 @@ npm install @napi-rs/cli >/dev/null 2>&1
 npx napi build --platform --release 2>&1 | grep -E "(Compiling|Finished|error)" || true
 printf "${GREEN}✓${NC} clipboard.freebsd-x64.node built\n"
 
-# Step 6: Rebuild sharp for FreeBSD
-printf "${YELLOW}[6/7]${NC} Rebuilding sharp image processing module...\n"
+# Step 6: Verify installation
+printf "${YELLOW}[6/7]${NC} Verifying installation...\n"
 cd "${PKG_DIR}"
-npm rebuild sharp >/dev/null 2>&1
-printf "${GREEN}✓${NC} sharp rebuilt\n"
+if [ -f "${PKG_DIR}/node_modules/@mariozechner/clipboard/clipboard.freebsd-x64.node" ]; then
+    printf "${GREEN}✓${NC} Native modules verified\n"
+else
+    printf "${YELLOW}Warning: clipboard module may not have built correctly${NC}\n"
+fi
 
 # Step 7: Create user and directories
 printf "${YELLOW}[7/7]${NC} Setting up user and directories...\n"
