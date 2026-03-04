@@ -60,7 +60,8 @@ pkg install -y \
     gcc \
     python311 \
     pkgconf \
-    vips >/dev/null 2>&1
+    vips \
+    pcre2 >/dev/null 2>&1
 
 printf "${GREEN}✓${NC} System packages installed\n"
 
